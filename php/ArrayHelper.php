@@ -4,12 +4,8 @@
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license http://www.yiiframework.com/license/
  */
+//use yii\base\Arrayable;
 
-namespace yii\helpers;
-
-use Yii;
-use yii\base\Arrayable;
-use yii\base\InvalidArgumentException;
 
 /**
  * BaseArrayHelper 为 [[ArrayHelper]] 提供了具体的实现方法。
@@ -84,14 +80,14 @@ class ArrayHelper
                     return $recursive ? static::toArray($result, $properties) : $result;
                 }
             }
-            if ($object instanceof Arrayable) {
-                $result = $object->toArray([], [], $recursive);
-            } else {
-                $result = [];
-                foreach ($object as $key => $value) {
-                    $result[$key] = $value;
-                }
+//            if ($object instanceof Arrayable) {
+//                $result = $object->toArray([], [], $recursive);
+//            } else {
+            $result = [];
+            foreach ($object as $key => $value) {
+                $result[$key] = $value;
             }
+//            }
 
             return $recursive ? static::toArray($result, $properties) : $result;
         }
@@ -627,7 +623,7 @@ class ArrayHelper
      * `SORT_REGULAR`，`SORT_NUMERIC`，`SORT_STRING`，`SORT_LOCALE_STRING`，`SORT_NATURAL` 和 `SORT_FLAG_CASE`。
      * 请参考 [PHP manual](http://php.net/manual/en/function.sort.php)
      * 获取更多详细信息。按具有不同排序标志的多个键排序时，使用数组中的标记排序。
-     * @throws InvalidArgumentException 如果 $direction 或者 $sortFlag 参数的个数
+     * @throws \Exception 如果 $direction 或者 $sortFlag 参数的个数
      * 与 $key 参数的个数不一致。
      */
     public static function multisort(&$array, $key, $direction = SORT_ASC, $sortFlag = SORT_REGULAR)
@@ -640,12 +636,12 @@ class ArrayHelper
         if (is_scalar($direction)) {
             $direction = array_fill(0, $n, $direction);
         } elseif (count($direction) !== $n) {
-            throw new InvalidArgumentException('The length of $direction parameter must be the same as that of $keys.');
+            throw new \Exception('The length of $direction parameter must be the same as that of $keys.');
         }
         if (is_scalar($sortFlag)) {
             $sortFlag = array_fill(0, $n, $sortFlag);
         } elseif (count($sortFlag) !== $n) {
-            throw new InvalidArgumentException('The length of $sortFlag parameter must be the same as that of $keys.');
+            throw new \Exception('The length of $sortFlag parameter must be the same as that of $keys.');
         }
         $args = [];
         foreach ($keys as $i => $key) {
@@ -681,7 +677,7 @@ class ArrayHelper
     public static function htmlEncode($data, $valuesOnly = true, $charset = null)
     {
         if ($charset === null) {
-            $charset = Yii::$app ? Yii::$app->charset : 'UTF-8';
+            $charset = 'UTF-8';
         }
         $d = [];
         foreach ($data as $key => $value) {
@@ -813,7 +809,7 @@ class ArrayHelper
      * @param array|\Traversable $haystack 要寻找的值。
      * @param bool $strict 是否启用 (`===`) 比较。
      * @return bool 如果 `$needle` 存在于 `$haystack` 中返回 `true`，否则将返回 `false`。
-     * @throws InvalidArgumentException 如果 `$haystack` 不能遍历也不是数组则返回异常。
+     * @throws \Exception 如果 `$haystack` 不能遍历也不是数组则返回异常。
      * @see http://php.net/manual/en/function.in-array.php
      * @since 2.0.7
      */
@@ -828,7 +824,7 @@ class ArrayHelper
         } elseif (is_array($haystack)) {
             return in_array($needle, $haystack, $strict);
         } else {
-            throw new InvalidArgumentException('Argument $haystack must be an array or implement Traversable');
+            throw new \Exception('Argument $haystack must be an array or implement Traversable');
         }
 
         return false;
@@ -857,7 +853,7 @@ class ArrayHelper
      * @param array|\Traversable $needles 这个值必须 **all** 在 `$haystack` 存在。
      * @param array|\Traversable $haystack 要搜索的值。
      * @param bool $strict 是否启用 (`===`) 比较。
-     * @throws InvalidArgumentException 如果 `$haystack` 或者 `$needles` 既不能遍历也不是数组。
+     * @throws \Exception 如果 `$haystack` 或者 `$needles` 既不能遍历也不是数组。
      * @return bool 如果 `$needles` 存在于 `$haystack` 返回 `true`，否则返回 `false`。
      * @since 2.0.7
      */
@@ -873,7 +869,7 @@ class ArrayHelper
             return true;
         }
 
-        throw new InvalidArgumentException('Argument $needles must be an array or implement Traversable');
+        throw new \Exception('Argument $needles must be an array or implement Traversable');
     }
 
     /**
@@ -962,5 +958,143 @@ class ArrayHelper
         }
 
         return $result;
+    }
+}
+/**
+ * 该对象调用 [[ArrayHelper::merge()]] 方法后对数组中的值进行移除操作。
+ *
+ * 例如：
+ *
+ * ```php
+ * $array1 = [
+ *     'ids' => [
+ *         1,
+ *     ],
+ *     'validDomains' => [
+ *         'example.com',
+ *         'www.example.com',
+ *     ],
+ * ];
+ *
+ * $array2 = [
+ *     'ids' => [
+ *         2,
+ *     ],
+ *     'validDomains' => new \yii\helpers\UnsetArrayValue(),
+ * ];
+ *
+ * $result = \yii\helpers\ArrayHelper::merge($array1, $array2);
+ * ```
+ *
+ * 结果如下
+ *
+ * ```php
+ * [
+ *     'ids' => [
+ *         1,
+ *         2,
+ *     ],
+ * ]
+ * ```
+ *
+ * @author Robert Korulczyk <robert@korulczyk.pl>
+ * @since 2.0.10
+ */
+class UnsetArrayValue
+{
+    /**
+     * 使用 `var_export()` 后进行实例化。
+     *
+     * @param array $state
+     * @return UnsetArrayValue
+     * @see var_export()
+     * @since 2.0.16
+     */
+    public static function __set_state($state)
+    {
+        return new self();
+    }
+}
+
+/**
+ * 调用对象执行 [[ArrayHelper::merge()]] 方法后对数组中的值进行替换操作。
+ *
+ * 例如：
+ *
+ * ```php
+ * $array1 = [
+ *     'ids' => [
+ *         1,
+ *     ],
+ *     'validDomains' => [
+ *         'example.com',
+ *         'www.example.com',
+ *     ],
+ * ];
+ *
+ * $array2 = [
+ *     'ids' => [
+ *         2,
+ *     ],
+ *     'validDomains' => new \yii\helpers\ReplaceArrayValue([
+ *         'yiiframework.com',
+ *         'www.yiiframework.com',
+ *     ]),
+ * ];
+ *
+ * $result = \yii\helpers\ArrayHelper::merge($array1, $array2);
+ * ```
+ *
+ * 结果如下
+ *
+ * ```php
+ * [
+ *     'ids' => [
+ *         1,
+ *         2,
+ *     ],
+ *     'validDomains' => [
+ *         'yiiframework.com',
+ *         'www.yiiframework.com',
+ *     ],
+ * ]
+ * ```
+ *
+ * @author Robert Korulczyk <robert@korulczyk.pl>
+ * @since 2.0.10
+ */
+class ReplaceArrayValue
+{
+    /**
+     * @var 用作替代的值。
+     */
+    public $value;
+
+
+    /**
+     * 构造函数。
+     * @param 将 $value 值用作替换值。
+     */
+    public function __construct($value)
+    {
+        $this->value = $value;
+    }
+
+    /**
+     * 使用 `var_export()` 后进行实例化。
+     *
+     * @param array $state
+     * @return ReplaceArrayValue
+     * @throws Exception 当 $state 数组中不包含 `value` 元素时，抛出异常
+     * @see var_export()
+     * @since 2.0.16
+     */
+    public static function __set_state($state)
+    {
+        if (!isset($state['value'])) {
+            throw new Exception('Failed to instantiate class "Instance". Required parameter "id" is missing');
+        }
+
+        return new self($state['value']);
     }
 }
