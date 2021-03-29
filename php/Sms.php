@@ -22,6 +22,14 @@ class Sms extends Component
 
 
     /**
+     * @return \Redis
+     */
+    public function getRedis(){
+        return $this->getRedis();
+    }
+
+
+    /**
      * 发送普通短信
      * @param $mobile
      * @param $content
@@ -55,7 +63,7 @@ class Sms extends Component
 
         //验证码放入redis 5分钟后失效
         $mobileKey = $this->getCodeKey($mobile);
-        Yii::$app->redis->setex($mobileKey ,$this->codeExpire, $code);
+        $this->getRedis()->setex($mobileKey ,$this->codeExpire, $code);
         //加入redis完成
 
         $this->afterSendCodeSuccess($mobile , $ip);
@@ -73,7 +81,7 @@ class Sms extends Component
         $end = mktime(23,59,59,date("m"),date("d"),date("Y"));
 
         /** @var Connection $redis */
-        $redis = Yii::$app->redis;
+        $redis = $this->getRedis();
         //添加间隔验证。
         $limitKey = $this->getLimitKey($mobile);
         $redis->setex($limitKey ,$this->sendLimit, 1);
@@ -117,7 +125,7 @@ class Sms extends Component
      */
     public function getCode($mobile){
         $mobileKey = $this->getCodeKey($mobile);
-        $redis = Yii::$app->redis;
+        $redis = $this->getRedis();
         return $redis->get($mobileKey);
     }
 
@@ -168,7 +176,7 @@ class Sms extends Component
         }
         //检查是否相隔60秒后发送
         $limitKey = $this->getLimitKey($mobile);
-        $smsSendLimit = Yii::$app->redis->get($limitKey);
+        $smsSendLimit = $this->getRedis()->get($limitKey);
         if ($smsSendLimit) {
             return false;
         }
@@ -186,7 +194,7 @@ class Sms extends Component
             return true;
         }
         $keyIp = $this->getIpKey($ip);
-        $smsSendNum = Yii::$app->redis->get($keyIp);
+        $smsSendNum = $this->getRedis()->get($keyIp);
         if (empty($smsSendNum) || $smsSendNum < $this->ipMaxSmsNum) {
             return true;
         }
@@ -205,7 +213,7 @@ class Sms extends Component
             return true;
         }
         $key = $this->getSendNumKey($mobile);
-        $smsSendNum = Yii::$app->redis->get($key);
+        $smsSendNum = $this->getRedis()->get($key);
         if (empty($smsSendNum) || $smsSendNum < $this->daySendMaxNum) {
             return true;
         }
@@ -219,7 +227,7 @@ class Sms extends Component
      */
     public function delMobileCode($mobile){
         $mobileKey = $this->getCodeKey($mobile);
-        return Yii::$app->redis->del($mobileKey);
+        return $this->getRedis()->del($mobileKey);
     }
 
     /**
@@ -265,7 +273,7 @@ class Sms extends Component
      * @return int
      */
     public function getMobileNextSendTime($mobile){
-        return Yii::$app->redis->ttl($this->getLimitKey($mobile));
+        return $this->getRedis()->ttl($this->getLimitKey($mobile));
     }
 
     /**
@@ -275,7 +283,7 @@ class Sms extends Component
      */
     public function clearSendLimit($mobile , $ip){
         /** @var Connection $redis */
-        $redis = Yii::$app->redis;
+        $redis = $this->getRedis();
         $redis->del($this->getIpKey($ip) , $this->getSendNumKey($mobile) , $this->getLimitKey($mobile));
         return true;
     }
